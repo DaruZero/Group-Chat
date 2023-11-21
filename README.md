@@ -9,12 +9,12 @@ hands-on experience in diverse language paradigms.
 
 For each implementation, my goal is to achieve the following results:
 
-- *Create a new chat room*: Users can create a new chat room.
-- *Join a chat room*: Users can join an existing chat room by providing the name
+- **Create a new chat room**: Users can create a new chat room.
+- **Join a chat room**: Users can join an existing chat room by providing the name
   of the chat.
-- *Send a message*: Users can send messages to the chat room.
-- *Receive a message*: Users can receive messages from the chat room.
-- *Leave a chat room*: Users can leave the chat room.
+- **Send a message**: Users can send messages to the chat room.
+- **Receive a message**: Users can receive messages from the chat room.
+- **Leave a chat room**: Users can leave the chat room.
 
 Libraries and frameworks are allowed, but not required.
 
