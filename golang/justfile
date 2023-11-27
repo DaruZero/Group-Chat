@@ -1,0 +1,19 @@
+# Print help
+@help:
+	just --list
+
+# Tidy and vendor modules
+@deps: tidy vendor
+
+# Vendor all modules
+@vendor:
+	go mod vendor
+
+# Tidy modules
+@tidy:
+	go mod tidy
+
+# Format all files and run fieldalignment. Run again on failure.
+@fmt:
+	go fmt ./...
+	fieldalignment -fix ./...
