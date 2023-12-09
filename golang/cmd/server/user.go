@@ -16,10 +16,12 @@ type Message struct {
 	content string `json:"content"`
 }
 
-// createUser creates a new user
+// createUser creates a new user and adds it to the hub's clients list.
+// If the user already exists, it returns the existing user.
 func (h *Hub) createUser(conn *websocket.Conn) *User {
 	zap.S().Info("creating new user")
 	var user *User
+	h.mu.Lock()
 	if _, ok := h.clients[conn.RemoteAddr()]; !ok {
 		user = &User{
 			conn: conn,
@@ -31,6 +33,7 @@ func (h *Hub) createUser(conn *websocket.Conn) *User {
 		zap.S().Warn("user already exists")
 		user = h.clients[conn.RemoteAddr()]
 	}
+	h.mu.Unlock()
 	return user
 }
 
