@@ -17,19 +17,19 @@ type Message struct {
 }
 
 // createUser creates a new user
-func (s *Hub) createUser(conn *websocket.Conn) *User {
+func (h *Hub) createUser(conn *websocket.Conn) *User {
 	zap.S().Info("creating new user")
 	var user *User
-	if _, ok := s.clients[conn.RemoteAddr()]; !ok {
+	if _, ok := h.clients[conn.RemoteAddr()]; !ok {
 		user = &User{
 			conn: conn,
 			name: namesgenerator.GetRandomName(0),
 		}
-		s.clients[conn.RemoteAddr()] = user
+		h.clients[conn.RemoteAddr()] = user
 		zap.S().Infof("created user %s", user.name)
 	} else {
 		zap.S().Warn("user already exists")
-		user = s.clients[conn.RemoteAddr()]
+		user = h.clients[conn.RemoteAddr()]
 	}
 	return user
 }

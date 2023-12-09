@@ -32,8 +32,8 @@ func NewHub() *Hub {
 }
 
 // handleConnections upgrades HTTP connections to WebSocket and handles new connections
-func (s *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
-	conn, err := s.upgrader.Upgrade(w, r, nil)
+func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
+	conn, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		zap.S().Fatalf("error upgrading http connection to ws: %v", err)
 	}
@@ -46,8 +46,8 @@ func (s *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 		roomName = r.Form.Get("room")
 	}
 
-	user := s.createUser(conn)
-	s.joinRoom(user, roomName)
+	user := h.createUser(conn)
+	h.joinRoom(user, roomName)
 
 	// Main message handling loop
 	for {

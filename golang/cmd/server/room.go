@@ -9,38 +9,38 @@ type Room struct {
 }
 
 // joinRoom adds a user to a room
-func (s *Hub) joinRoom(user *User, roomName string) {
-	s.mu.Lock()
+func (h *Hub) joinRoom(user *User, roomName string) {
+	h.mu.Lock()
 
 	// Create a new room if it doesn't exist
 	var room *Room
 	var ok bool
-	if room, ok = s.rooms[roomName]; !ok {
-		s.mu.Unlock()
-		room = s.createRoom(roomName)
-		s.mu.Lock()
+	if room, ok = h.rooms[roomName]; !ok {
+		h.mu.Unlock()
+		room = h.createRoom(roomName)
+		h.mu.Lock()
 	}
 
 	room.users[user] = true
-	s.mu.Unlock()
+	h.mu.Unlock()
 
 	zap.S().Infof("user %s joined room %s", user.name, roomName)
 }
 
 // createRoom creates a new room
-func (s *Hub) createRoom(roomName string) *Room {
+func (h *Hub) createRoom(roomName string) *Room {
 	zap.S().Infof("creating room %s", roomName)
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
-	if room, ok := s.rooms[roomName]; !ok {
+	if room, ok := h.rooms[roomName]; !ok {
 		room = &Room{
 			name:     roomName,
 			users:    make(map[*User]bool),
 			messages: make([]Message, 0),
 		}
-		s.rooms[roomName] = room
+		h.rooms[roomName] = room
 		zap.S().Infof("created room %s", roomName)
 		return room
 	} else {
