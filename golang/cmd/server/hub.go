@@ -1,9 +1,9 @@
 package main
 
 import (
-	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
@@ -14,7 +14,7 @@ var hub *Hub
 
 type Hub struct {
 	rooms    map[string]*Room
-	clients  map[net.Addr]*User
+	clients  map[string]*User
 	upgrader websocket.Upgrader
 	mu       sync.Mutex
 }
@@ -25,7 +25,7 @@ func NewHub() *Hub {
 		hub = &Hub{
 			upgrader: websocket.Upgrader{},
 			rooms:    make(map[string]*Room),
-			clients:  make(map[net.Addr]*User),
+			clients:  make(map[string]*User),
 		}
 	})
 	return hub
@@ -38,6 +38,7 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 		zap.S().Fatalf("error upgrading http connection to ws: %v", err)
 	}
 
+	// Parse the form to get the room name
 	err = r.ParseForm()
 	if err != nil {
 		zap.S().Errorf("error parsing form: %v", err)
@@ -49,7 +50,25 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 		roomName = "general"
 	}
 
-	user := h.createUser(conn)
+	// Retrieve the user's token from the cookies
+	var user *User
+	cookie, _ := r.Cookie("token")
+	if cookie == nil {
+		user = h.createUser(conn)
+	} else {
+		user = h.getUserByToken(cookie.Value)
+		if user == nil {
+			user = h.createUser(conn)
+		}
+	}
+
+	// Set the token cookie, renewing the expiration date
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Value:   user.token,
+		Expires: time.Now().Add(24 * time.Hour),
+	})
+
 	h.joinRoom(user, roomName)
 
 	// Main message handling loop
