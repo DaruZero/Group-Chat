@@ -35,12 +35,12 @@ func (h *Hub) joinRoom(user *User, roomName string) *Room {
 
 	room.mu.Lock()
 	room.users[user] = true
-	room.mu.Unlock()
 
 	// Send chat history to the new user
 	for _, msg := range room.messages {
 		user.conn.WriteJSON(msg)
 	}
+	room.mu.Unlock()
 
 	zap.S().Infof("user %s joined room %s", user.name, roomName)
 
@@ -82,7 +82,9 @@ func (h *Hub) createRoom(roomName string) *Room {
 func (r *Room) broadcastMessage(sender string, message Message) {
 	message.Sender = sender
 
+	r.mu.Lock()
 	r.messages = append(r.messages, message)
+	r.mu.Unlock()
 
 	for user := range r.users {
 		if user.token != sender {
