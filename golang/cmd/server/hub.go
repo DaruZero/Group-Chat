@@ -69,7 +69,7 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 		Expires: time.Now().Add(24 * time.Hour),
 	})
 
-	h.joinRoom(user, roomName)
+	room := h.joinRoom(user, roomName)
 
 	// Main message handling loop
 	for {
@@ -79,6 +79,6 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 			zap.S().Errorf("error reading json from message: %v", err)
 		}
 
-		user.handleMessage(roomName, msg)
+		room.broadcastMessage(user.token, msg)
 	}
 }

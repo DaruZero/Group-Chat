@@ -1,6 +1,8 @@
 package main
 
-import "go.uber.org/zap"
+import (
+	"go.uber.org/zap"
+)
 
 type Room struct {
 	name     string
@@ -8,23 +10,34 @@ type Room struct {
 	messages []Message
 }
 
-// joinRoom adds a user to a room
-func (h *Hub) joinRoom(user *User, roomName string) {
-	h.mu.Lock()
+type Message struct {
+	Sender    string `json:"sender"`
+	Content   string `json:"content"`
+	Timestamp int64  `json:"timestamp"`
+}
+
+// joinRoom adds a user to a room and returns the room.
+func (h *Hub) joinRoom(user *User, roomName string) *Room {
 
 	// Create a new room if it doesn't exist
 	var room *Room
 	var ok bool
+	h.mu.Lock()
 	if room, ok = h.rooms[roomName]; !ok {
 		h.mu.Unlock()
 		room = h.createRoom(roomName)
-		h.mu.Lock()
 	}
 
 	room.users[user] = true
-	h.mu.Unlock()
+
+	// Send chat history to the new user
+	for _, msg := range room.messages {
+		user.conn.WriteJSON(msg)
+	}
 
 	zap.S().Infof("user %s joined room %s", user.name, roomName)
+
+	return room
 }
 
 // createRoom creates a new room. It overwrites an existing room if it has the same name.
@@ -42,4 +55,16 @@ func (h *Hub) createRoom(roomName string) *Room {
 	h.rooms[roomName] = room
 	zap.S().Infof("created room %s", roomName)
 	return room
+}
+
+func (r *Room) broadcastMessage(sender string, message Message) {
+	message.Sender = sender
+
+	r.messages = append(r.messages, message)
+
+	for user := range r.users {
+		if user.token != sender {
+			user.conn.WriteJSON(message)
+		}
+	}
 }

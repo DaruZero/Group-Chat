@@ -13,11 +13,6 @@ type User struct {
 	token string
 }
 
-type Message struct {
-	sender  string `json:"sender"`
-	content string `json:"content"`
-}
-
 // createUser creates a new user and adds it to the hub's clients list.
 func (h *Hub) createUser(conn *websocket.Conn) *User {
 	zap.S().Info("creating new user")
@@ -52,9 +47,4 @@ func (h *Hub) getUserByToken(token string) *User {
 		zap.S().Warnf("user with token %s not found", token)
 		return nil
 	}
-}
-
-// handleMessage processes an incoming message
-func (u *User) handleMessage(roomName string, msg Message) {
-	// TODO: handle message
 }
