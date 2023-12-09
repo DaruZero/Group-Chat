@@ -8,10 +8,10 @@ import (
 )
 
 type Room struct {
-	name      string
 	users     map[*User]bool
-	messages  []Message
 	closeChan chan bool
+	name      string
+	messages  []Message
 	mu        sync.Mutex
 }
 

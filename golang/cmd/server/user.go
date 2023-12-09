@@ -10,10 +10,10 @@ import (
 )
 
 type User struct {
+	lastActive time.Time
 	conn       *websocket.Conn
 	name       string
 	token      string
-	lastActive time.Time
 }
 
 // createUser creates a new user and adds it to the hub's clients list.
