@@ -37,6 +37,7 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		zap.S().Fatalf("error upgrading http connection to ws: %v", err)
 	}
+	defer conn.Close()
 
 	// Parse the form to get the room name
 	err = r.ParseForm()
@@ -74,9 +75,15 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 	// Main message handling loop
 	for {
 		var msg Message
-		err := conn.ReadJSON(&msg)
+		err := user.conn.ReadJSON(&msg)
 		if err != nil {
-			zap.S().Errorf("error reading json from message: %v", err)
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				zap.S().Infof("user %s disconnected", user.name)
+				room.users[user] = false
+			} else {
+				zap.S().Errorf("error reading json from message: %v", err)
+			}
+			break
 		}
 
 		room.broadcastMessage(user.token, msg)
