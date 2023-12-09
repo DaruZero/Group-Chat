@@ -38,12 +38,15 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 		zap.S().Fatalf("error upgrading http connection to ws: %v", err)
 	}
 
-	var roomName string
 	err = r.ParseForm()
 	if err != nil {
+		zap.S().Errorf("error parsing form: %v", err)
+		return
+	}
+
+	roomName := r.Form.Get("room")
+	if roomName == "" {
 		roomName = "general"
-	} else {
-		roomName = r.Form.Get("room")
 	}
 
 	user := h.createUser(conn)
