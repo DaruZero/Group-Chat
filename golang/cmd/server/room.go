@@ -27,24 +27,19 @@ func (h *Hub) joinRoom(user *User, roomName string) {
 	zap.S().Infof("user %s joined room %s", user.name, roomName)
 }
 
-// createRoom creates a new room
+// createRoom creates a new room. It overwrites an existing room if it has the same name.
 func (h *Hub) createRoom(roomName string) *Room {
 	zap.S().Infof("creating room %s", roomName)
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	if room, ok := h.rooms[roomName]; !ok {
-		room = &Room{
-			name:     roomName,
-			users:    make(map[*User]bool),
-			messages: make([]Message, 0),
-		}
-		h.rooms[roomName] = room
-		zap.S().Infof("created room %s", roomName)
-		return room
-	} else {
-		zap.S().Warnf("room %s already exists", roomName)
-		return room
+	room := &Room{
+		name:     roomName,
+		users:    make(map[*User]bool),
+		messages: make([]Message, 0),
 	}
+	h.rooms[roomName] = room
+	zap.S().Infof("created room %s", roomName)
+	return room
 }
