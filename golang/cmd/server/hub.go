@@ -27,6 +27,12 @@ func NewHub() *Hub {
 			rooms:    make(map[string]*Room),
 			clients:  make(map[string]*User),
 		}
+
+		go func() {
+			for range time.Tick(5 * time.Minute) {
+				hub.removeEmptyRooms()
+			}
+		}()
 	})
 	return hub
 }
@@ -88,4 +94,16 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 
 		room.broadcastMessage(user.token, msg)
 	}
+}
+
+func (h *Hub) removeEmptyRooms() {
+	h.mu.Lock()
+	for roomName, room := range h.rooms {
+		if len(room.users) == 0 {
+			room.closeChan <- true
+			delete(h.rooms, roomName)
+			zap.S().Infof("room %s removed for inactivity", roomName)
+		}
+	}
+	h.mu.Unlock()
 }

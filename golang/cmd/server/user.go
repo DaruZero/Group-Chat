@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/DaruZero/group-chat/golang/internal/tools"
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/gorilla/websocket"
@@ -8,9 +10,10 @@ import (
 )
 
 type User struct {
-	conn  *websocket.Conn
-	name  string
-	token string
+	conn       *websocket.Conn
+	name       string
+	token      string
+	lastActive time.Time
 }
 
 // createUser creates a new user and adds it to the hub's clients list.

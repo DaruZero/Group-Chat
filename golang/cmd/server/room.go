@@ -1,13 +1,18 @@
 package main
 
 import (
+	"sync"
+	"time"
+
 	"go.uber.org/zap"
 )
 
 type Room struct {
-	name     string
-	users    map[*User]bool
-	messages []Message
+	name      string
+	users     map[*User]bool
+	messages  []Message
+	closeChan chan bool
+	mu        sync.Mutex
 }
 
 type Message struct {
@@ -28,7 +33,9 @@ func (h *Hub) joinRoom(user *User, roomName string) *Room {
 		room = h.createRoom(roomName)
 	}
 
+	room.mu.Lock()
 	room.users[user] = true
+	room.mu.Unlock()
 
 	// Send chat history to the new user
 	for _, msg := range room.messages {
@@ -44,16 +51,31 @@ func (h *Hub) joinRoom(user *User, roomName string) *Room {
 func (h *Hub) createRoom(roomName string) *Room {
 	zap.S().Infof("creating room %s", roomName)
 
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
 	room := &Room{
 		name:     roomName,
 		users:    make(map[*User]bool),
 		messages: make([]Message, 0),
 	}
+
+	h.mu.Lock()
 	h.rooms[roomName] = room
+	h.mu.Unlock()
+
 	zap.S().Infof("created room %s", roomName)
+
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		for {
+			select {
+			case <-ticker.C:
+				room.removeInactiveUsers()
+			case <-room.closeChan:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
 	return room
 }
 
@@ -67,4 +89,16 @@ func (r *Room) broadcastMessage(sender string, message Message) {
 			user.conn.WriteJSON(message)
 		}
 	}
+}
+
+func (r *Room) removeInactiveUsers() {
+	now := time.Now()
+	r.mu.Lock()
+	for user, active := range r.users {
+		if !active && now.Sub(user.lastActive) > 1*time.Hour {
+			delete(r.users, user)
+			zap.S().Infof("user %s removed from room %s for inactivity", user.name, r.name)
+		}
+	}
+	r.mu.Unlock()
 }
