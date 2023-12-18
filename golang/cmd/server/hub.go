@@ -92,7 +92,7 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		room.broadcastMessage(user.token, msg)
+		room.broadcastMessage(user.name, msg)
 	}
 }
 
