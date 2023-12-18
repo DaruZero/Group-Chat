@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DaruZero/group-chat/golang/internal/models"
 	"go.uber.org/zap"
 )
 
@@ -11,14 +12,8 @@ type Room struct {
 	users     map[*User]bool
 	closeChan chan bool
 	name      string
-	messages  []Message
+	messages  []models.Message
 	mu        sync.Mutex
-}
-
-type Message struct {
-	Sender    string `json:"sender"`
-	Content   string `json:"content"`
-	Timestamp int64  `json:"timestamp"`
 }
 
 // joinRoom adds a user to a room and returns the room.
@@ -54,7 +49,7 @@ func (h *Hub) createRoom(roomName string) *Room {
 	room := &Room{
 		name:     roomName,
 		users:    make(map[*User]bool),
-		messages: make([]Message, 0),
+		messages: make([]models.Message, 0),
 	}
 
 	h.mu.Lock()
@@ -79,7 +74,7 @@ func (h *Hub) createRoom(roomName string) *Room {
 	return room
 }
 
-func (r *Room) broadcastMessage(sender string, message Message) {
+func (r *Room) broadcastMessage(sender string, message models.Message) {
 	message.Sender = sender
 
 	r.mu.Lock()

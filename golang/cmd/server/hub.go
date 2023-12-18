@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DaruZero/group-chat/golang/internal/models"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 )
@@ -80,7 +81,7 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 
 	// Main message handling loop
 	for {
-		var msg Message
+		var msg models.Message
 		err := user.conn.ReadJSON(&msg)
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
