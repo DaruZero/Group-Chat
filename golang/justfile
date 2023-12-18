@@ -31,3 +31,7 @@ DOCKER_TAG := "latest"
 # Push target docker image with specified the tag (defaults to latest).
 @docker-push target tag=DOCKER_TAG:
 	docker push {{DOCKER_IMAGE}}{{target}}:{{tag}}
+
+# Run the target docker image with specified the tag (defaults to latest).
+@docker-run target tag=DOCKER_TAG:
+	docker run -it --rm {{ if target == "server" { "-p 8080:8080" } else { "" } }} {{DOCKER_IMAGE}}{{target}}:{{tag}}
