@@ -14,10 +14,7 @@ import (
 func main() {
 	log := logger.New("LOG_LEVEL")
 	defer func(logger *zap.SugaredLogger) {
-		err := logger.Sync()
-		if err != nil {
-			panic(err)
-		}
+		logger.Sync()
 	}(log)
 
 	zap.S().Info("welcome to the go websocket chat server!")
