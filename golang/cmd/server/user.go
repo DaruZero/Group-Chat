@@ -17,7 +17,7 @@ type User struct {
 }
 
 // createUser creates a new user and adds it to the hub's clients list.
-func (h *Hub) createUser(conn *websocket.Conn) *User {
+func (h *Hub) createUser() *User {
 	zap.S().Info("creating new user")
 	token := tools.GenerateToken()
 	h.mu.Lock()
@@ -25,11 +25,10 @@ func (h *Hub) createUser(conn *websocket.Conn) *User {
 	if _, ok := h.clients[token]; ok {
 		zap.S().Warn("user with token already exists, retrying with new token")
 		h.mu.Unlock()
-		return h.createUser(conn)
+		return h.createUser()
 	}
 
 	user := &User{
-		conn:  conn,
 		name:  namesgenerator.GetRandomName(0),
 		token: token,
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -17,7 +18,7 @@ type Room struct {
 }
 
 // joinRoom adds a user to a room and returns the room.
-func (h *Hub) joinRoom(user *User, roomName string) *Room {
+func (h *Hub) joinRoom(user *User, roomName string) (*Room, error) {
 
 	// Create a new room if it doesn't exist
 	var room *Room
@@ -29,17 +30,17 @@ func (h *Hub) joinRoom(user *User, roomName string) *Room {
 	}
 
 	room.mu.Lock()
-	room.users[user] = true
-
-	// Send chat history to the new user
-	for _, msg := range room.messages {
-		user.conn.WriteJSON(msg)
+	if _, alreadyJoined := room.users[user]; !alreadyJoined {
+		room.users[user] = true
+	} else {
+		return nil, fmt.Errorf("user %s already joined room %s", user.name, roomName)
 	}
+	user.lastActive = time.Now()
 	room.mu.Unlock()
 
 	zap.S().Infof("user %s joined room %s", user.name, roomName)
 
-	return room
+	return room, nil
 }
 
 // createRoom creates a new room. It overwrites an existing room if it has the same name.

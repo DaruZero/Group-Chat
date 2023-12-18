@@ -40,14 +40,8 @@ func NewHub() *Hub {
 
 // handleConnections upgrades HTTP connections to WebSocket and handles new connections
 func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
-	conn, err := h.upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		zap.S().Fatalf("error upgrading http connection to ws: %v", err)
-	}
-	defer conn.Close()
-
 	// Parse the form to get the room name
-	err = r.ParseForm()
+	err := r.ParseForm()
 	if err != nil {
 		zap.S().Errorf("error parsing form: %v", err)
 		return
@@ -62,11 +56,11 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 	var user *User
 	cookie, _ := r.Cookie("token")
 	if cookie == nil {
-		user = h.createUser(conn)
+		user = h.createUser()
 	} else {
 		user = h.getUserByToken(cookie.Value)
 		if user == nil {
-			user = h.createUser(conn)
+			user = h.createUser()
 		}
 	}
 
@@ -77,19 +71,40 @@ func (h *Hub) HandleConnection(w http.ResponseWriter, r *http.Request) {
 		Expires: time.Now().Add(24 * time.Hour),
 	})
 
-	room := h.joinRoom(user, roomName)
+	room, err := h.joinRoom(user, roomName)
+	if err != nil {
+		zap.S().Errorf("error joining room: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("error joining room"))
+		return
+	}
+
+	conn, err := h.upgrader.Upgrade(w, r, w.Header())
+	if err != nil {
+		zap.S().Fatalf("error upgrading http connection to ws: %v", err)
+	}
+	defer conn.Close()
+
+	user.conn = conn
+
+	// Send chat history to the new user
+	for _, msg := range room.messages {
+		user.conn.WriteJSON(msg)
+	}
 
 	// Main message handling loop
 	for {
 		var msg models.Message
 		err := user.conn.ReadJSON(&msg)
 		if err != nil {
-			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived) {
 				zap.S().Infof("user %s disconnected", user.name)
 				room.users[user] = false
+				user.lastActive = time.Now()
 			} else {
 				zap.S().Errorf("error reading json from message: %v", err)
 			}
+			user.conn.Close()
 			break
 		}
 
